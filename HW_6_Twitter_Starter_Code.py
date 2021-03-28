@@ -1,12 +1,12 @@
 #########################################
-##### Name:                         #####
-##### Uniqname:                     #####
+##### Name:  Po-Kang Chen           #####
+##### Uniqname: pkchen              #####
 #########################################
 
 from requests_oauthlib import OAuth1
 import json
 import requests
-
+import operator
 import hw6_secrets_starter as secrets # file that contains your OAuth credentials
 
 CACHE_FILENAME = "twitter_cache.json"
@@ -32,8 +32,8 @@ def test_oauth():
     url = "https://api.twitter.com/1.1/account/verify_credentials.json"
     auth = OAuth1(client_key, client_secret, access_token, access_token_secret)
     authentication_state = requests.get(url, auth=auth).json()
+    # authentication_state = requests.get(url, auth=auth).status_code
     return authentication_state
-
 
 def open_cache():
     ''' Opens the cache file if it exists and loads the JSON into
@@ -70,7 +70,7 @@ def save_cache(cache_dict):
     -------
     None
     '''
-    dumped_json_cache = json.dumps(cache_dict)
+    dumped_json_cache = json.dumps(cache_dict,sort_keys=True, indent=4)
     fw = open(CACHE_FILENAME,"w")
     fw.write(dumped_json_cache)
     fw.close() 
@@ -97,7 +97,13 @@ def construct_unique_key(baseurl, params):
         the unique key as a string
     '''
     #TODO Implement function
-    pass
+    param_strings = []
+    connector = '_'
+    for k in params.keys():
+        param_strings.append(f'{k}_{params[k]}')
+    param_strings.sort()
+    unique_key = baseurl + connector + connector.join(param_strings)
+    return unique_key
 
 
 def make_request(baseurl, params):
@@ -117,7 +123,8 @@ def make_request(baseurl, params):
         a dictionary
     '''
     #TODO Implement function
-    pass
+    response = requests.get(baseurl, params=params, auth=oauth)
+    return response.json()
 
 
 def make_request_with_cache(baseurl, hashtag, count):
@@ -138,9 +145,9 @@ def make_request_with_cache(baseurl, hashtag, count):
     baseurl: string
         The URL for the API endpoint
     hashtag: string
-        The hashtag to search for
-    count: integer
-        The number of results you request from Twitter
+        The hashtag to search (i.e. #MarchMadness2021)
+    count: int
+        The number of tweets to retrieve
     
     Returns
     -------
@@ -149,7 +156,17 @@ def make_request_with_cache(baseurl, hashtag, count):
         JSON
     '''
     #TODO Implement function
-    pass
+    params = {'q': hashtag, 'count': str(count)}
+    # params = {'q': '@umsi'}
+    request_key = construct_unique_key(baseurl, params)
+    if request_key in CACHE_DICT.keys():
+        print("fetching cached data", request_key)
+        return CACHE_DICT[request_key]
+    else:
+        print("making new request", request_key)
+        CACHE_DICT[request_key] = make_request(baseurl, params)
+        save_cache(CACHE_DICT)
+        return CACHE_DICT[request_key]
 
 
 def find_most_common_cooccurring_hashtag(tweet_data, hashtag_to_ignore):
@@ -172,14 +189,30 @@ def find_most_common_cooccurring_hashtag(tweet_data, hashtag_to_ignore):
 
     '''
     # TODO: Implement function 
-    pass
     ''' Hint: In case you're confused about the hashtag_to_ignore 
     parameter, we want to ignore the hashtag we queried because it would 
     definitely be the most occurring hashtag, and we're trying to find 
     the most commonly co-occurring hashtag with the one we queried (so 
     we're essentially looking for the second most commonly occurring 
     hashtags).'''
-
+    count_dict = {}
+    # for i in tweet_data["statuses"]["entities"]:
+    #     print(t)
+    # print(tweet_data["statuses"]["entities"])
+    for entity in tweet_data["statuses"]:
+        # for entity["hashtags"]
+        for h in entity["entities"]["hashtags"]:
+            if h["text"] in count_dict:
+                count_dict[h["text"]] += 1
+            else:
+                count_dict[h["text"]] = 1
+    sorted_list = sorted(count_dict.items(), key=operator.itemgetter(1), reverse=True)
+    # print(list(count_dict.items())[1][0])
+    # print(list(count_dict.items())[1][1])
+    
+    # print(sorted_list[1][0])
+    # count_dict = dict(sorted(count_dict.items(), key=lambda item: item[1], reverse=True))
+    return list(count_dict.items())[1][0]
     
 
 if __name__ == "__main__":

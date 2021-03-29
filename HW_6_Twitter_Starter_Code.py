@@ -35,6 +35,7 @@ def test_oauth():
     # authentication_state = requests.get(url, auth=auth).status_code
     return authentication_state
 
+
 def open_cache():
     ''' Opens the cache file if it exists and loads the JSON into
     the CACHE_DICT dictionary.
@@ -209,11 +210,11 @@ def find_most_common_cooccurring_hashtag(tweet_data, hashtag_to_ignore):
     sorted_list = sorted(count_dict.items(), key=operator.itemgetter(1), reverse=True)
     # print(list(count_dict.items())[1][0])
     # print(list(count_dict.items())[1][1])
-    
     # print(sorted_list[1][0])
     # count_dict = dict(sorted(count_dict.items(), key=lambda item: item[1], reverse=True))
-    return list(count_dict.items())[1][0]
-    
+    # return list(count_dict.items())[1][0]
+    return "#" + sorted_list[1][0]
+
 
 if __name__ == "__main__":
     if not client_key or not client_secret:
